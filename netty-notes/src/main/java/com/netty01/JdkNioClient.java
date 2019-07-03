@@ -21,11 +21,13 @@ public class JdkNioClient {
 	public JdkNioClient(int connectionPort) throws IOException {
 		this.port = connectionPort;
 		connSelector = Selector.open();
-		InetSocketAddress remote = new InetSocketAddress(InetAddress.getByName("127.0.0.1"), this.port);
-		socketChannel = SocketChannel.open(remote);// connect
+		// InetSocketAddress remote = new
+		// InetSocketAddress(InetAddress.getByName("127.0.0.1"), this.port);
+		socketChannel = SocketChannel.open();// connect
 		socketChannel.configureBlocking(false);
 		socketChannel.register(connSelector, SelectionKey.OP_CONNECT);
 		socketChannel.register(connSelector, SelectionKey.OP_READ);
+		socketChannel.connect(new InetSocketAddress(port));
 		socketChannel.finishConnect();
 
 		System.out.println("Client Connected." + socketChannel.getLocalAddress());
@@ -34,8 +36,11 @@ public class JdkNioClient {
 
 	public void writeData(String data) throws IOException {
 		ByteBuffer buffer = ByteBuffer.allocate(data.length());
+		buffer.put(data.getBytes());
+		buffer.flip();
 		socketChannel.write(buffer);
-		socketChannel.socket().getOutputStream().flush();
+		// socketChannel.socket().getOutputStream().flush();
+		System.out.println("Client write data=" + data);
 	}
 
 	private void startRead() {

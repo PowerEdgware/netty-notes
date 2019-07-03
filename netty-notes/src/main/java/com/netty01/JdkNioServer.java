@@ -1,7 +1,6 @@
 package com.netty01;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
@@ -35,9 +34,9 @@ public class JdkNioServer {
 		serverSocketChannel = SelectorProvider.provider().openServerSocketChannel();
 
 		serverSocketChannel.configureBlocking(false);
-		InetAddress addr = InetAddress.getByName("127.0.0.1");
-		InetSocketAddress socketAddress = new InetSocketAddress(addr, this.port);
-		serverSocketChannel.bind(socketAddress, 128);
+//		InetAddress addr = InetAddress.getByName("127.0.0.1");
+		InetSocketAddress socketAddress = new InetSocketAddress(this.port);
+		serverSocketChannel.socket().bind(socketAddress, 128);
 		serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);// 注册selector，交给其管理
 		System.out.println("Nio Server bind on port=" + port);
 	}
@@ -52,6 +51,9 @@ public class JdkNioServer {
 			while (!stopped.get()) {
 				try {
 					int eventNum = selector.select(TimeUnit.SECONDS.toMillis(1));
+					if (stopped.get()) {
+						break;
+					}
 					if (eventNum <= 0) {
 						continue;
 					}
@@ -77,6 +79,7 @@ public class JdkNioServer {
 								Charset.defaultCharset().encode("welcome client." + socketChannel.getRemoteAddress()));
 					} else {
 						executor.submit(new EventRunner(eventkey));
+						// new EventRunner(eventkey).run();
 					}
 				}
 
@@ -96,11 +99,12 @@ public class JdkNioServer {
 	}
 
 	public boolean stop() {
-		boolean suc = stopped.compareAndSet(false, true);
+		System.out.println("Recevd stop singal from:" + Thread.currentThread().getName());
+		stopped.set(true);
 		if (runnerThread != null) {
 			runnerThread.interrupt();
 		}
-		return suc;
+		return true;
 	}
 
 	class EventRunner implements Runnable {
@@ -122,43 +126,50 @@ public class JdkNioServer {
 		void processEvent() throws IOException {
 			if (eventKey.isReadable()) {
 				// do read
-				ByteBuffer buf = ByteBuffer.allocate(1024);
+				ByteBuffer buf = ByteBuffer.allocateDirect(512);
 
 				SocketChannel socketChannel = (SocketChannel) eventKey.channel();
-				int len = socketChannel.read(buf);// 写入Buf
-				if (len == 0) {
-					System.out.println(" recv data len=" + len);
+				StringBuffer content = new StringBuffer();
+				Charset charset = Charset.defaultCharset();
+				// 写入Buf
+				while (socketChannel.read(buf) > 0) {
+					buf.flip();//// 转换模式，由写变成读取
+					content.append(charset.decode(buf));
+				}
+				if (content.length() == 0) {
 					return;
 				}
-				buf.flip();// 转换模式，由写变成读取
 
-//				byte[] bytes = new byte[len];
 //				if (buf.hasArray()) {
 //					bytes = buf.array();
 //				} else {
 //					buf.get(bytes);
 //				}
-				StringBuffer sub = new StringBuffer(Charset.defaultCharset().decode(buf));
-				System.out.println("Server recved data=" + sub.toString() + "len=" + buf.limit() + " from chn="
-						+ socketChannel.getRemoteAddress());
+//				byte[] bytes = new byte[buf.limit()];
+				System.out.println(buf);
+//				buf.get(bytes);
+
+				// StringBuffer sub = new StringBuffer(Charset.defaultCharset().decode(buf));
+				System.out.println("Server recved data=" + content.toString() + " len=" + content.length()
+						+ " from chn=" + socketChannel.getRemoteAddress());
 
 				buf.clear();
 				buf = null;
 				eventKey.interestOps(SelectionKey.OP_WRITE);
 
-//				String data = "server resp:hello,client at:" + LocalDateTime.now();
-//				// 写数据
-//				socketChannel.write(ByteBuffer.wrap(data.getBytes()));
+				String data = "server resp:hello client received data:[" + content + "]at:" + LocalDateTime.now();
+				// 写数据
+				socketChannel.write(ByteBuffer.wrap(data.getBytes()));
 //				socketChannel.socket().getOutputStream().flush();
 
 			} else if (eventKey.isWritable()) {
-				String data = "server resp:hello,client at:" + LocalDateTime.now();
-				// 写数据
-
-				SocketChannel socketChannel = (SocketChannel) eventKey.channel();
-				socketChannel.write(ByteBuffer.wrap(data.getBytes()));
-//				socketChannel.close();
-				eventKey.interestOps(SelectionKey.OP_READ);
+//				String data = "server resp:hello,client at:" + LocalDateTime.now();
+//				// 写数据
+//
+//				SocketChannel socketChannel = (SocketChannel) eventKey.channel();
+//				socketChannel.write(ByteBuffer.wrap(data.getBytes()));
+////				socketChannel.close();
+//				eventKey.interestOps(SelectionKey.OP_READ);
 			} else if (!eventKey.isValid()) {
 				eventKey.channel().close();
 			}

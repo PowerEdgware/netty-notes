@@ -16,6 +16,9 @@ public class NioClientBoot {
 					String line = scan.nextLine();
 					if ("".equals(line))
 						continue; // 不允许发空消息
+					else if ("q".equals(line)) {
+						break;
+					}
 					try {
 						client.writeData(line);
 					} catch (IOException e) {
