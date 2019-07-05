@@ -1,5 +1,6 @@
 package com.netty02;
 
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -26,7 +27,7 @@ public class NettyTomcatServer {
 
 		bootstrap.group(boss, worker);
 
-		//bootstrap.handler(handler)
+		// bootstrap.handler(handler)
 		bootstrap.channel(NioServerSocketChannel.class);
 		bootstrap.childHandler(new ChannelInitializer<SocketChannel>() {
 			@Override
@@ -36,18 +37,19 @@ public class NettyTomcatServer {
 				p.addLast("decoder", new HttpRequestDecoder());
 				p.addLast("encoder", new HttpResponseEncoder());
 				p.addLast("aggregator", new HttpObjectAggregator(1048576));
+				// 消息处理器
 				p.addLast("handler", new LocalHttpRequestHandler());
 
-				// 消息处理器
 			}
 
 		}).option(ChannelOption.SO_BACKLOG, 128).childOption(ChannelOption.TCP_NODELAY, true)
 				.childOption(ChannelOption.SO_KEEPALIVE, true);
 
 		try {
+			// NioEventLoop
 			// 绑定端口
 			future = bootstrap.bind(this.port).sync();
-
+			System.out.println("Server starts on port=" + this.port + " nthreads=" + nThreads);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -59,6 +61,28 @@ public class NettyTomcatServer {
 		} finally {
 			worker.shutdownGracefully();
 			boss.shutdownGracefully();
+		}
+		System.out.println("server stopped");
+	}
+
+	public static void main(String[] args) {
+		NettyTomcatServer tomcatServer = new NettyTomcatServer();
+		Thread start = new Thread(() -> {
+			tomcatServer.start();
+		});
+		start.start();
+
+		try {
+			while (true) {
+				System.out.println("Enter q to stop server.");
+				int c = System.in.read();
+				if (c == 'q') {
+					tomcatServer.stop();
+					break;
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }
