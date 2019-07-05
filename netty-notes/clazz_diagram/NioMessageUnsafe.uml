@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>JAVA</ID>
+  <OriginalElement>io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe</OriginalElement>
+  <nodes>
+    <node x="0.0" y="80.0">io.netty.channel.AbstractChannel.AbstractUnsafe</node>
+    <node x="95.25" y="0.0">io.netty.channel.Channel.Unsafe</node>
+    <node x="58.25" y="240.0">io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe</node>
+    <node x="60.75" y="160.0">io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe</node>
+    <node x="156.0" y="80.0">io.netty.channel.nio.AbstractNioChannel.NioUnsafe</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe" target="io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe">
+      <point x="0.0" y="-15.0" />
+      <point x="0.0" y="15.0" />
+    </edge>
+    <edge source="io.netty.channel.nio.AbstractNioChannel.NioUnsafe" target="io.netty.channel.Channel.Unsafe">
+      <point x="0.0" y="-15.0" />
+      <point x="210.5" y="55.0" />
+      <point x="161.25" y="55.0" />
+      <point x="22.0" y="15.0" />
+    </edge>
+    <edge source="io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe" target="io.netty.channel.nio.AbstractNioChannel.NioUnsafe">
+      <point x="39.25" y="-15.0" />
+      <point x="178.5" y="135.0" />
+      <point x="210.5" y="135.0" />
+      <point x="0.0" y="15.0" />
+    </edge>
+    <edge source="io.netty.channel.nio.AbstractNioChannel.AbstractNioUnsafe" target="io.netty.channel.AbstractChannel.AbstractUnsafe">
+      <point x="-39.25" y="-15.0" />
+      <point x="100.0" y="135.0" />
+      <point x="68.0" y="135.0" />
+      <point x="0.0" y="15.0" />
+    </edge>
+    <edge source="io.netty.channel.AbstractChannel.AbstractUnsafe" target="io.netty.channel.Channel.Unsafe">
+      <point x="0.0" y="-15.0" />
+      <point x="68.0" y="55.0" />
+      <point x="117.25" y="55.0" />
+      <point x="-22.0" y="15.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="132.5" y="135.0" />
+  <SelectedNodes>
+    <node>io.netty.channel.nio.AbstractNioMessageChannel.NioMessageUnsafe</node>
+    <node>io.netty.channel.nio.AbstractNioChannel.NioUnsafe</node>
+  </SelectedNodes>
+  <Categories />
+  <SCOPE>All</SCOPE>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
