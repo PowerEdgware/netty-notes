@@ -5,7 +5,6 @@ public class Readme0 {
 	/**
 	 * 
 	 * 
-	 * **学号：GP17173**   **netty版本：4.1.25.Final****
 
 **1、为什么都说Netty是高性能的RPC框架？**
 *1.1 IO模型，netty支持NIO，异步非阻塞IO模型。*
