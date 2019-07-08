@@ -3,6 +3,7 @@ package com.netty03.registry;
 import java.net.SocketAddress;
 
 import com.netty03.codec.BusinessHandler;
+import com.util.SimpleThreadFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -33,8 +34,9 @@ public class Registry0RpcServer {
 
 	public void start() {
 		ServerBootstrap bootstrap = new ServerBootstrap();
-		boss = new NioEventLoopGroup(1);
-		worker = new NioEventLoopGroup(nThreads);
+		//For test ThreadFactory
+		boss = new NioEventLoopGroup(1, SimpleThreadFactory.create("nioBossGroup"));
+		worker = new NioEventLoopGroup(nThreads, SimpleThreadFactory.create("nioWorkerGroup"));
 
 		bootstrap.group(boss, worker);
 
