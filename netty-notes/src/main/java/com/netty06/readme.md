@@ -55,5 +55,18 @@ netstat -an|grep 9091|wc -l
 netstat -an|grep 9091|wc -l
 6343
 
+查看当前系统打开的文件数量
 
+lsof | wc -l
+watch "lsof | wc -l"
+
+查看某一进程的打开文件数量
+lsof -p pid | wc -l
+OR
+ls /proc/[pid]/fd | wc -
+
+系统总的文件句柄数：
+/proc/sys/fs/file-max
+整个系统目前使用的文件句柄数
+/proc/sys/fs/file-nr
 
