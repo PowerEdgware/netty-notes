@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,9 +27,10 @@ public class ClientBoot {
 	static volatile boolean stopEs = false;
 
 	public static void main(String[] args) {
-		String remote = "192.168.88.135";
-		int port = 9091;
-		int nThreads = 5000;
+		log.info("Main params=" + Arrays.toString(args));
+		String remote = args[0];
+		int port = Integer.parseInt(args[1]);
+		int nThreads = Integer.parseInt(args[2]);
 
 		final NettyClient nettyClient = new NettyClient(remote, port, nThreads);
 		// start thread
