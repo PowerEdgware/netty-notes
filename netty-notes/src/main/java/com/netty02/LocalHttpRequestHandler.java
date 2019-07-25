@@ -41,10 +41,11 @@ public class LocalHttpRequestHandler extends ChannelInboundHandlerAdapter {
 			try {
 				String uri = request.uri();
 				FileInputStream fis = new FileInputStream("files/" + uri + ".txt");
-				byte[] datas = fis.readAllBytes();
+//				byte[] datas = fis.readAllBytes();
 				fis.close();
+				
 
-				resp = new String(datas);
+				resp = new String(new byte[0]);
 				response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
 						Unpooled.wrappedBuffer(resp.getBytes()));
 				setHeaders(response, request);

@@ -44,7 +44,7 @@ public class ClientBoot {
 			};
 		}.start();
 
-		startMonitorThread(nettyClient);
+		//startMonitorThread(nettyClient);
 
 		startSendThread(nettyClient);
 
