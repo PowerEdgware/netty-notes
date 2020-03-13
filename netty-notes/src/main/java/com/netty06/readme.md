@@ -73,6 +73,8 @@ ls /proc/[pid]/fd | wc -
 
 ###使用阿里云服务器压测netty连接 20200313  
 
+配置： 2核心cpu 8GB内存  
+
 ##### 配置阿里云服务对外端口映射 为9091
 该配置直接登入阿里云配置即可。
 
@@ -122,5 +124,26 @@ root soft nofile 65535
 root hard nofile 65535
 * soft nofile 65535
 * hard nofile 65535
+
+```
+
+3.服务端链接达到：
+`netstat -an|grep 9091|wc -l`
+
+8000+  
+
+  
+客户端机器内存不足 最终nettyClient报错： 
+
+```
+Caused by: java.net.SocketException: No buffer space available (maximum connections reached?): connect
+```
+
+服务端cpu 内存使用情况：free -m    
+
+```
+              total        used        free      shared  buff/cache   available
+Mem:           7821        4956         895           0        1969        2547
+Swap:             0           0           0
 
 ```
