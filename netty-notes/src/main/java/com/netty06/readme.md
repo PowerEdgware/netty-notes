@@ -70,3 +70,57 @@ ls /proc/[pid]/fd | wc -
 整个系统目前使用的文件句柄数
 /proc/sys/fs/file-nr  
 
+
+###使用阿里云服务器压测netty连接 20200313  
+
+##### 配置阿里云服务对外端口映射 为9091
+该配置直接登入阿里云配置即可。
+
+##### 开放centos7 9091防火墙端口
+添加  
+`firewall-cmd --zone=public --add-port=9091/tcp --permanent    （--permanent永久生效，没有此参数重启后失效）`
+
+重新载入使它生效  
+`firewall-cmd --reload`
+
+查看所有打开的端口：   
+`firewall-cmd --zone=public --list-ports`  
+
+`19002/tcp 19003/tcp 19004/tcp 9091/tcp`  
+
+删除  
+`firewall-cmd --zone= public --remove-port=80/tcp --permanent` 
+
+#### 阿里云服务器默认配置
+
+1.文件句柄限制： ulimit -a  
+
+```
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 31204
+max locked memory       (kbytes, -l) 64
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 65535  //确保大小够用 默认1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 31204
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+```
+
+2.cat /etc/security/limits.conf  
+
+```
+# End of file
+root soft nofile 65535
+root hard nofile 65535
+* soft nofile 65535
+* hard nofile 65535
+
+```
