@@ -31,8 +31,11 @@ public class SimplePressureServer {
 
 	private final SimpleStringHandler childBusnissHandler;
 
-	public SimplePressureServer(int port) {
+	public SimplePressureServer(int port,int workerThreads) {
 		this.port = port;
+		if(workerThreads>0) {
+			nThreads=workerThreads;
+		}
 		childBusnissHandler = new SimpleStringHandler();
 	}
 

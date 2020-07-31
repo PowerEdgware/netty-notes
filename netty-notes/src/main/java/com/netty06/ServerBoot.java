@@ -9,10 +9,12 @@ public class ServerBoot {
 
 	public static void main(String[] args) {
 		int port = 7720;
+		int nthreads=Runtime.getRuntime().availableProcessors()*2;
 		if (args.length > 0) {
 			port = Integer.parseInt(args[0]);
+			nthreads = Integer.parseInt(args[1]);
 		}
-		SimplePressureServer rpcServer = new SimplePressureServer(port);
+		SimplePressureServer rpcServer = new SimplePressureServer(port,nthreads);
 		ServerBoot boot = new ServerBoot(rpcServer);
 
 		Thread start = new Thread(() -> {

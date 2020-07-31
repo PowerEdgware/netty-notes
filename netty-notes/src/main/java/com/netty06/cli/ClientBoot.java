@@ -22,16 +22,20 @@ public class ClientBoot {
 
 	static final Blocker blocker = new Blocker();
 
-	static final int SendnThreads = Runtime.getRuntime().availableProcessors() * 2;
+	static final int SendnThreads = 20;
 	static ExecutorService es = Executors.newFixedThreadPool(SendnThreads);
 	static volatile boolean stopEs = false;
 
 	public static void main(String[] args) {
 		log.info("Main params=" + Arrays.toString(args));
-		String remote = args[0];
-		int port = Integer.parseInt(args[1]);
-		int nThreads = Integer.parseInt(args[2]);
-
+//		String remote = args[0];
+//		int port = Integer.parseInt(args[1]);
+//		int nThreads = Integer.parseInt(args[2]);
+		
+		String remote ="192.168.43.241";
+		int port =9091;
+		int nThreads = 100;
+		
 		final NettyClient nettyClient = new NettyClient(remote, port, nThreads);
 		// start thread
 		new Thread() {
@@ -44,7 +48,7 @@ public class ClientBoot {
 			};
 		}.start();
 
-		//startMonitorThread(nettyClient);
+		startMonitorThread(nettyClient);
 
 		startSendThread(nettyClient);
 
@@ -68,8 +72,9 @@ public class ClientBoot {
 						nettyClient.senMsg(msg);
 					} catch (Exception e) {
 					}
+					System.out.println("Conn SUC NUM="+nettyClient.getConnSucNum());
 					Random rnd = new Random();
-					long duration = rnd.nextInt(3) + 1;
+					long duration = rnd.nextInt(5) + 1;
 					LockSupport.parkNanos(blocker, TimeUnit.SECONDS.toNanos(duration));
 				}
 			});

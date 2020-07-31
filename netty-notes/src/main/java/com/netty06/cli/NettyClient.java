@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.slf4j.Logger;
@@ -73,6 +74,7 @@ public class NettyClient {
 		return started.get();
 	}
 
+	AtomicInteger sucNum=new AtomicInteger();
 	private void buildConnPool() {
 		for (int i = 0; i < nThreads; i++) {
 			ChannelFuture future = bootstrap.connect(host, port);
@@ -85,9 +87,10 @@ public class NettyClient {
 				log.info("channel connected:" + channel.localAddress() + ", remote=" + channel.remoteAddress()
 						+ " index=" + i);
 				clientPool.add(future.channel());
-				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(20));
+				sucNum.incrementAndGet();
+				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(130));
 			} else {
-				log.warn("connect failed: " + this.host + ":" + this.port + " nWorkers=" + nThreads + " index=" + i);
+				log.warn("connect failed: " + this.host + ":" + this.port + " nWorkers=" + nThreads + " index=" + i,future.cause());
 				LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
 			}
 			// 是否停止了
@@ -96,6 +99,10 @@ public class NettyClient {
 				break;
 			}
 		}
+	}
+	
+	public int getConnSucNum() {
+		return sucNum.get();
 	}
 
 	public void stop() {
@@ -129,6 +136,7 @@ public class NettyClient {
 			log.info("channel=" + channel + " Thread=" + Thread.currentThread().getName() + " sendmsg=" + msg);
 			channel.writeAndFlush(msg);
 		} else {
+			channel.close();
 			log.error("channel=" + channel + " not writable.");
 		}
 	}

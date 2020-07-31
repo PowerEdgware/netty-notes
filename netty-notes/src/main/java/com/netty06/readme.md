@@ -215,4 +215,191 @@ vi /etc/sysctl.conf
  
  
 
+-------------
+
+#### 使用阿里云2C8G压测 2020/7/29-30
+>网络用的是4G wifi热点 ，他是公网访问     
+》netty-server 压到1985个TCP连接就上不去了。   
+>此时内存充足，cpu都不高。   
+> 在机器上用内网telnet是可以继续连接的，外网连不上了   
+>猜测和公网限制有关，毕竟走了网关。   
+
+#### 使用本地虚拟机 2C4G  时间：2020/7/31
+> centos7 2C4G   
+>内核参数的调整和上述流出相差不大    
+> 2台win机器，其中一台中装了虚拟机  ，网络使用了桥接模式，他们处于同一个网段。    
+> 使用的是4g wifi共享热点   
+>客户端机器ip:192.168.43.8/192.168.43.161   
+>服务端ip:192.168.43.241  
+
+
+##### 测试开始
+第一次开始root用户登录，最大文件句柄数是默认的1024，
+后修改`/etc/security/limits.conf`
+添加：
+
+```
+root soft nofile 65535
+root hard nofile 65535
+```
+
+修改文件：`/etc/sysctl.conf` 添加：
+
+```
+#my add 7/31
+net.ipv4.tcp_keepalive_time = 600  
+net.ipv4.tcp_keepalive_probes = 3  
+net.ipv4.tcp_keepalive_intvl =15
+#net.ipv4.ip_local_port_range = 2048 65000  
+net.core.netdev_max_backlog = 10240
+```
+
+连接数达到4200+就连不上了。查看netty-server日志报错如下：   
+
+```
+WARN io.netty.util.internal.logging.Slf4JLogger:warn:151 - An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.
+java.io.IOException: Too many open files
+	at sun.nio.ch.ServerSocketChannelImpl.accept0(Native Method)
+	at sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:422)
+	at sun.nio.ch.ServerSocketChannelImpl.accept(ServerSocketChannelImpl.java:250)
+	at io.netty.util.internal.SocketUtils$5.run(SocketUtils.java:110)
+	at io.netty.util.internal.SocketUtils$5.run(SocketUtils.java:107)
+	at java.security.AccessController.doPrivileged(Native Method)
+	at io.netty.util.internal.SocketUtils.accept(SocketUtils.java:107)
+	at io.netty.channel.socket.nio.NioServerSocketChannel.doReadMessages(NioServerSocketChannel.java:141)
+	at io.netty.channel.nio.AbstractNioMessageChannel$NioMessageUnsafe.read(AbstractNioMessageChannel.java:75)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:647)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:582)
+	at io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:499)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:461)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$5.run(SingleThreadEventExecutor.java:884)^C
+
+```
+感觉文件句柄的修改没生效。
+ss -lnt 看到端口9091 Recv-Q达到129 超出backlog的值128.所以导致全连接队列满了，后续的客户端连接会被拒绝，最终导致连接超时。   
+
+同时查看半连接/全连接队列溢出的情况：
+
+```
+netstat -s|grep SYNs;
+netstat -s|grep overflow;  //值都在增加，说明队列都溢出了。
+```
+
+##### 改进
+然后重启了linux服务。重新启动项目netty-notes
+server端。  
+
+系统文件句柄限制已经生效：  
+
+```
+ulimit -a
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 14989
+max locked memory       (kbytes, -l) 64
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 65535  //默认1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 14989
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited
+```
+
+server端做了修改：netty的worker线程数由cpu核心数*2改成外部传入的值64.发生数据的客户端变成2个。  
+然后再次测试连接数。
+
+两台 win服务，eclipse 进程发起对netty-server的连接。  
+
+分别 发起 3000，3000 1600的连接，都链接成功。
+
+服务端连接数：   
+
+```
+ netstat -ant|grep 9091|grep ESTABLISHED|wc -l
+7595
+```
+说明修改起了作用。
+
+此时内存使用情况:   
+
+```
+ free -m
+total        used        free      shared  buff/cache   available
+Mem:           3771         526        2825          11         418        2951
+Swap:          4095           0        4095
+
+```
+
+	
+查看全连接/半连接队列是否溢出：这个时候都没有溢出   
+
+```
+netstat -s|grep SYNs
+[root@power netty-notes]# netstat -s|grep overf
+```
+
+##### 继续压测
+再次发起连接2000，连接成功。  
+
+连接成功个数：   
+
+```
+netstat -ant|grep 9091|wc -l
+9596
+```
+
+内存使用：   
+
+```
+free -m
+total        used        free      shared  buff/cache   available
+Mem:           3771         524        2818          11         427        2945
+Swap:          4095           0        4095
+
+```
+
+抓包 后没有发现由断开的连接发生。  
+
+`tcpdump -i ens32 -vv -nn -s1500 port 9091 and 'tcp[tcpflags]&tcp-fin!=0' or 'tcp[tcpflags]&tcp-rst!=0' `
+
+再次压测1000后：
+
+tcp连接：  
+
+```
+netstat -ant|grep 9091|grep ESTABLISHED|wc -l
+10595
+
+```
+
+内存使用：    
+
+```
+free -m
+              total        used        free      shared  buff/cache   available
+Mem:           3771         527        2811          11         431        2939
+Swap:          4095           0        4095
+
+```
+继续加大，只要客户端机器内存，资源允许，连接数还是可以上升的。  
+
+总结：  
+
+本次还是按照以前的步骤对系统进行参数调整，
+
+影响TCP连接数主要是：  
+1.系统级别限制，包括用户级别文件句柄数，系统总文件句柄限制使用的默认值一般没问题。   
+2.用户级别包括进程的控制，用户级别进程数，文件句柄的限制等。   
+涉及的配置修改：  
+内核参数，`/etc/sysctl.conf`  
+系统限制，`/ect/security/limits.conf`  
+3.服务器内存限制，主要是每个TCP连接需要消耗内核内存。   
+
+附件 `sysctl_local_centos.txt`是本次内核使用的完整参数。  
 
